@@ -19,13 +19,14 @@ class NonogramConstraint(Constraint):
         """
         super().__init__(variables)
         self.clue = clue
-        # طول سطر/ستون
-        self.line_length = len(self.variables)  # TODO: Implemented
-        # حداقل طول لازم برای جا شدن همه بلوک‌ها + فاصله‌های اجباری
+        self.line_length = len(self.variables)
+        #
         if not self.clue:
-            self.min_length = 0  # هیچ بلوکی نداریم
+            # when there are no clue , no space is needed
+            self.min_length = 0
         else:
-            self.min_length = sum(self.clue) + (len(self.clue) - 1)  # TODO: Implemented
+            # number of the cells that should be filled + the number of gap (minimum gap = 1)
+            self.min_length = sum(self.clue) - (len(self.clue) - 1)
 
     def is_satisfied(self) -> bool:
         """
@@ -49,70 +50,18 @@ class NonogramConstraint(Constraint):
         This allows for early pruning during search.
         Optimized version with better pruning.
         """
-        # مقدار None: هنوز مشخص نیست
-        # مقدار 0 : خانه خالی
-        # مقدار 1 : خانه پر
-
-        # اگر هیچ بلوکی در clue نیست، نباید هیچ 1ای وجود داشته باشد
         if not self.clue:
+            # Empty clue - no filled cells allowed
             return all(v != 1 for v in values)
 
-        n = len(values)
+        # TODO: Implement Here! (complete the logic for partial consistency check)
 
-        # ۱) اگر تعداد ۱های فعلی از مجموع سرنخ‌ها بیشتر باشد → غیرممکن
-        total_filled_now = sum(1 for v in values if v == 1)
-        total_required = sum(self.clue)
-        if total_filled_now > total_required:
-            return False
-
-        # ۲) اگر حتی با پر کردن همه Noneها، به حداقل طول لازم نمی‌رسیم → غیرممکن
-        max_possible_filled = total_filled_now + sum(1 for v in values if v is None)
-        if max_possible_filled < total_required:
-            return False
-
-        # ۳) بررسی نکند که هیچ بلوک فعلی طولش از سرنخ متناظر بیشتر شده باشد
-        # تبدیل رشته به گروه‌های متوالی از ۱ و طولشان
-        segments = []
-        count = 0
-        for v in values:
-            if v == 1:
-                count += 1
-            else:
-                if count > 0:
-                    segments.append(count)
-                    count = 0
-        if count > 0:
-            segments.append(count)
-
-        # اگر تعداد گروه‌های ۱ فعلی بیشتر از تعداد بلوک‌ها باشد → غیرممکن
-        if len(segments) > len(self.clue):
-            return False
-
-        # هیچ سگمنت نباید از بلوک متناظر خودش بزرگ‌تر باشد
-        for i, seg_len in enumerate(segments):
-            if seg_len > self.clue[i]:
-                return False
-
-        # اگر تازه داریم بلوک‌ها را شروع می‌کنیم یا بینشان هستیم،
-        # امکان ادامه دادن وجود دارد، پس در اینجا می‌گوییم می‌تواند سازگار باشد
-        return True
+    pass
 
     def _matches_clue(self, values: List[int]) -> bool:
         """
         Check if a complete assignment matches the clue exactly.
         """
-        # استخراج طول بلوک‌های متوالی از ۱ها
-        segments = []
-        count = 0
-        for v in values:
-            if v == 1:
-                count += 1
-            else:
-                if count > 0:
-                    segments.append(count)
-                    count = 0
-        if count > 0:
-            segments.append(count)
+        # TODO: Implement Here! (complete the logic for matching the clue)
 
-        # باید دقیقا با clue برابر باشد
-        return segments == self.clue
+    pass

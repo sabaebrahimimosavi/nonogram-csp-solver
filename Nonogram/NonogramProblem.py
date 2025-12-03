@@ -10,20 +10,20 @@ class NonogramProblem(Problem):
     Each cell can be either 0 (empty) or 1 (filled).
     Row and column clues specify the pattern of filled cells.
     """
-    
+
     def __init__(self):
         """
         Initialize a Nonogram problem.
         """
         super().__init__([], [], "Dolphin Nonogram (25x25)")
         self._init_dolphin_25x25()
-    
+
     def _init_dolphin_25x25(self):
         """Initialize the full 25x25 dolphin puzzle."""
         self.rows = 25
         self.cols = 25
         self.size = 25  # For backward compatibility
-        
+
         # Define row clues (from top to bottom) - Full dolphin pattern
         row_clues = [
             [8],
@@ -52,7 +52,7 @@ class NonogramProblem(Problem):
             [5],
             [6],
         ]
-        
+
         # Define column clues (from left to right)
         column_clues = [
             [1],
@@ -81,60 +81,63 @@ class NonogramProblem(Problem):
             [2, 1],
             [1],
         ]
-        
+
         self._create_grid_and_constraints(row_clues, column_clues)
 
     def _create_grid_and_constraints(self, row_clues, column_clues):
         """Create the grid variables and constraints."""
-        # تعداد سطر و ستون
+
         rows = self.rows
         cols = self.cols
 
-        # 1) ساخت متغیرها و گرید دو بعدی
+        # construct 2D array of grids and array of Variables
         grid: List[List[Variable]] = []
         variables: List[Variable] = []
 
         for r in range(rows):
-            row_vars = []
+            grid_row_var = []
             for c in range(cols):
-                # هر سلول یک متغیر با دامنه {0, 1}
+                # each cell of grid is a Variable :
+                # with a name of V_row_column
+                # and domain of [0,1]
                 name = f"V_{r}_{c}"
                 var = Variable(domain=[0, 1], name=name)
-                row_vars.append(var)
-                variables.append(var)
-            grid.append(row_vars)
+                grid_row_var.append(var)
+            grid.append(grid_row_var)
 
         self.grid = grid
         self.variables = variables
 
-        # 2) ساخت محدودیت‌های سطری
+        # construct the constraints
         constraints = []
 
         for r in range(rows):
             row_vars = grid[r]
             clue = row_clues[r]
+            # make a constraints for each rows
             row_constraint = NonogramConstraint(row_vars, clue)
             constraints.append(row_constraint)
 
-        # 3) ساخت محدودیت‌های ستونی
         for c in range(cols):
+            # make a list of Variables of each column
             col_vars = [grid[r][c] for r in range(rows)]
             clue = column_clues[c]
-            col_constraint = NonogramConstraint(col_vars, clue)
-            constraints.append(col_constraint)
+            # make a constraints for each column
+            column_constraint = NonogramConstraint(col_vars, clue)
+            constraints.append(column_constraint)
 
         self.constraints = constraints
-
-        # 4) بعد از ساخت متغیرها و محدودیت‌ها، همسایه‌ها را محاسبه کن
+        # computes variable neighbors (variables sharing a constraint)
         self.calculate_neighbors()
-    
+        pass
+
     def print_board(self):
         """
         Print the current state of the nonogram board.
         Uses █ for filled cells (1), ░ for empty cells (0), and · for unassigned cells.
         """
         print(f"\n{self.name} - Current Board ({self.rows}x{self.cols}):")
-        
+
         # Print column numbers header
         if self.cols <= 20:
             # Small board - use spaced format
@@ -142,7 +145,7 @@ class NonogramProblem(Problem):
             for col in range(self.cols):
                 print(f" {col}", end="")
             print()
-            
+
             for row in range(self.rows):
                 print(f"{row:2d}", end="")
                 for col in range(self.cols):
@@ -158,9 +161,9 @@ class NonogramProblem(Problem):
             # Large board - use compact format
             print("    ", end="")
             for col in range(self.cols):
-                print(f"{col%10}", end="")
+                print(f"{col % 10}", end="")
             print()
-            
+
             for row in range(self.rows):
                 print(f"{row:2d} ", end="")
                 for col in range(self.cols):
@@ -173,7 +176,7 @@ class NonogramProblem(Problem):
                         print("·", end="")
                 print()
         print()
-    
+
     def print_assignments(self):
         """
         Override to provide a nicer output for the nonogram.

@@ -1,0 +1,15 @@
+# Python cache
+pycache/
+*.pyc
+
+# IDE
+.idea/
+.vscode/
+
+# macOS junk
+.DS_Store
+__MACOSX/
+
+# Virtual environments
+venv/
+env/

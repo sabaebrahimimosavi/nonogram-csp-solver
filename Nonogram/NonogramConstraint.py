@@ -19,8 +19,9 @@ class NonogramConstraint(Constraint):
         """
         super().__init__(variables)
         self.clue = clue
+        # length of rows or columns
         self.line_length = len(self.variables)
-        #
+
         if not self.clue:
             # when there are no clue , no space is needed
             self.min_length = 0
@@ -54,14 +55,61 @@ class NonogramConstraint(Constraint):
             # Empty clue - no filled cells allowed
             return all(v != 1 for v in values)
 
-        # TODO: Implement Here! (complete the logic for partial consistency check)
+        assigned_filled = sum(1 for v in values if v == 1)
+        real_filled = sum(self.clue)
+        unassigned = sum(1 for v in values if v is None)
 
+        # if the cells that assigned 1 is more that total 1 in clue
+        # we'll never be able to assigned it like this in real problem
+        if assigned_filled > real_filled:
+            return False
+
+        # we'll have maximum number of 1 if all the None in values are assigned 1
+        # if the maximum is less that number on 1 inn clue then ww can never reach the clue
+        if assigned_filled+unassigned < real_filled:
+            return False
+
+        assigned_blocks = self._count_blocks(values)
+
+        # if the minimum length of each block is greater that maximum length of blocks in clue
+        # then it be always greater, and it's not satisfy the constraints
+        # index of blocks might change depend on how we assign None
+        # That's why we just check it with the maximum
+        max_clue = max(self.clue)
+        if any(b > max_clue for b in assigned_blocks):
+            return False
+
+        # if it satisfies all the above conditions
+        # then we'll might be on right path
+        return True
     pass
 
+    @staticmethod
+    def _count_blocks(values: List[int]) -> List[int]:
+
+        # checks if the values has the same block of 1 as clue
+        block_length = 0
+        check = []
+        for i in range(len(values)):
+            if values[i] == 0 and not block_length == 0:
+                check.append(block_length)
+                block_length = 0
+            elif values[i] == 1:
+                block_length += values[i]
+
+        if not block_length == 0:
+            check.append(block_length)
+
+        return check
+
+    pass
     def _matches_clue(self, values: List[int]) -> bool:
         """
         Check if a complete assignment matches the clue exactly.
         """
-        # TODO: Implement Here! (complete the logic for matching the clue)
+        if self._count_blocks(values) == self.clue:
+            return True
+
+        return False
 
     pass

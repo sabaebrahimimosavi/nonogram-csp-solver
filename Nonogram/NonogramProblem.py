@@ -103,6 +103,7 @@ class NonogramProblem(Problem):
                 name = f"V_{r}_{c}"
                 var = Variable(domain=[0, 1], name=name)
                 grid_row_var.append(var)
+                variables.append(var)
             grid.append(grid_row_var)
 
         self.grid = grid
@@ -129,7 +130,7 @@ class NonogramProblem(Problem):
         self.constraints = constraints
         # computes variable neighbors (variables sharing a constraint)
         self.calculate_neighbors()
-        pass
+
 
     def print_board(self):
         """

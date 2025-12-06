@@ -99,7 +99,7 @@ class Solver:
 
     def is_consistent(self, var: Variable) -> bool:
         """
-        Determines ifthe given variable is consistent with all constraints.
+        Determines if the given variable is consistent with all constraints.
 
         Args:
             var (Variable): The variable to be checked for consistency.
@@ -148,7 +148,6 @@ class FastNonogramSolver:
         while changed:
             changed = False
             self.iterations += 1
-
             # Process each constraint (row and column)
             for constraint in self.constraints:
                 if self._solve_line(constraint):
@@ -233,16 +232,20 @@ class FastNonogramSolver:
             return False
 
         # Generate all valid completions efficiently
-        definite_filled, definite_empty =  # TODO: Implement Here!
+        definite_filled, definite_empty = self._find_definite_cells(current, clue, n)
 
         changed = False
 
         # Assign definite cells
         for idx in definite_filled:
-        # TODO: Implement Here!
+            if variables[idx].value is None:
+                changed = True
+                variables[idx].value = 1
 
         for idx in definite_empty:
-        # TODO: Implement Here!
+            if variables[idx].value is None:
+                changed = True
+                variables[idx].value = 0
 
         return changed
 
@@ -268,424 +271,16 @@ class FastNonogramSolver:
 
         # Find cells that are the same in ALL valid lines
         for i in range(n):
-        # TODO: Implement Here!
-
-        return definite_filled, definite_empty
-
-    def _generate_all_valid_lines(self, current: List[int], clue: List[int], n: int, max_solutions=1000) -> List[
-        List[int]]:
-        """
-        Generate all valid line configurations that match the clue and current state.
-        Limit to max_solutions for performance.
-        """
-        valid_lines = []
-
-        def place_blocks(pos, clue_idx, line):
-            """Recursively place blocks"""
-            # TODO: Implement Here! (complete the logic for placing blocks recursively)
-
-        place_blocks(0, 0, [None] * n)
-        return valid_lines
-
-    def _mrv_select(self, unassigned: List[Variable]) -> Variable:
-        """
-        Implements Minimum Remaining Values heuristic for FastNonogramSolver.
-        Selects the variable with the smallest domain (most constrained).
-
-        Args:
-            unassigned: List of unassigned variables
-
-        Returns:
-            Variable with smallest domain
-        """
-        if not unassigned:
-            return None
-
-        # For nonogram, domain is [0, 1], so we need a different metric
-        # We'll count how many constraints affect each variable
-        # and prefer variables that appear in more unsatisfied constraints
-        def constraint_score(var):
-            """Calculate constraint score - higher means more constrained"""
-            # TODO: Implement Here!
-            pass
-
-        # Sort by most constrained (highest score)
-        return max(unassigned, key=constraint_score)
-
-    def _lcv_order(self, var: Variable) -> List[int]:
-        """
-        Implements Least Constraining Value heuristic for FastNonogramSolver.
-        Orders domain values [0, 1] by how many conflicts they cause.
-
-        Args:
-            var: Variable to order values for
-
-        Returns:
-            List of values ordered by least constraining first
-        """
-        # TODO: Implement Here!
-        pass
-
-    def _forward_check(self, var: Variable) -> bool:
-        """
-        Implements Forward Checking for FastNonogramSolver.
-        After assigning a value to var, checks if any constraint involving var
-        would eliminate all possible values for unassigned variables.
-
-        Args:
-            var: The variable that was just assigned
-
-        Returns:
-            bool: True if forward checking passes (no domain wipeout), False otherwise
-        """
-        # Get constraints that involve the assigned variable
-        related_constraints = [c for c in self.constraints if var in c.variables]
-
-        # For each constraint, check if unassigned variables in it still have valid values
-        for constraint in related_constraints:
-            unassigned_in_constraint = [v for v in constraint.variables if not v.has_value]
-
-            for unassigned_var in unassigned_in_constraint:
-                # Check if this unassigned variable has any valid value
-                has_valid_value = False
-
-                for test_value in [0, 1]:
-                    unassigned_var.value = test_value
-
-                    # Check if constraint can still be satisfied
-                    if constraint.is_satisfied():
-                        has_valid_value = True
-                        unassigned_var.value = None
-                        break
-
-                    unassigned_var.value = None
-
-                # If no valid value exists for this variable, forward check fails
-                if not has_valid_value:
-                    return False
-
-        return True
-
-    def _backtrack(self) -> bool:
-        """
-        Backtracking with MRV and LCV heuristics for remaining unassigned cells.
-        Uses Minimum Remaining Values to select variables and Least Constraining Value to order domain values.
-        """
-        # TODO: use your mrv and lcv here!
-
-        # Find unassigned variables
-        unassigned = [v for v in self.problem.variables if not v.has_value]
-
-        # If all assigned, check if satisfied
-        if not unassigned:
-            return all(c.is_satisfied() for c in self.constraints)
-
-        # Select the first unassigned variable
-        var = unassigned[0]
-
-        # Default order
-        ordered_values = [0, 1]
-
-        # Try values in order
-        for value in ordered_values:
-            var.value = value
-
-            # Check constraints involving this variable
-            related_constraints = [c for c in self.constraints if var in c.variables]
-
-            # Check if assignment satisfies constraints and passes forward checking
-            if all(c.is_satisfied() for c in related_constraints) and self._forward_check(var):
-                # Try propagation
-                changed = True
-                iterations = 0
-                while changed and iterations < 3:
-                    changed = False
-                    iterations += 1
-                    for c in self.constraints:
-                        if self._solve_line(c):
-                            changed = True
-
-                # Recurse
-                if self._backtrack():
-                    return True
-
-            # Backtrack - unassign
-            var.value = None
-
-        return False
-
-
-from CSP.Problem import Problem
-from CSP.Variable import Variable
-
-
-class Solver:
-
-    def __init__(self, problem: Problem):
-        """
-        Initializes the Solver object with the given problem instance and optional parameters.
-
-        Args:
-            problem (Problem): The problem instance to be solved.
-        """
-        self.problem = problem
-        self.back_up = deque()
-
-    def is_finished(self) -> bool:
-        """
-        Determines if the problem has been solved.
-
-        Returns:
-            bool: True if the problem has been solved, False otherwise.
-        """
-        return all([x.is_satisfied() for x in self.problem.constraints]) and len(
-            self.problem.get_unassigned_variables()) == 0
-
-    def solve(self):
-        """
-        Solves the problem instance using the backtracking algorithm with optional heuristics.
-        """
-        start = time.time()
-        result = self.backtracking()
-        end = time.time()
-        time_elapsed = (end - start) * 1000
-        if result:
-            print(f'Solved after {time_elapsed} ms')
-        else:
-            print(f'Failed to solve after {time_elapsed} ms')
-
-    def backtracking(self) -> bool:
-        """
-        Implements the backtracking algorithm.
-
-        Returns:
-            bool: True if the problem has been solved, False otherwise.
-        """
-        if self.is_finished():
-            return True
-        var = self.problem.get_unassigned_variables()[0]
-        ordered_values = var.domain
-        for value in ordered_values:
-            self.save_domain(self.problem.variables)
-            var.value = value
-            if self.is_consistent(var) and self.forward_check(var): 
-                result = self.backtracking()
-                if result:
-                    return True
-            var.value = None
-            self.load_domain(self.problem) 
-        return False
-
-    def forward_check(self, var: Variable) -> bool:
-        """
-        Implements the Forward Checking algorithm.
-
-        """
-        constraints = self.problem.get_constraints(var)
-
-        for neighbor in var.neighbors:
-            if neighbor.has_value:
-                continue
-            tmp = neighbor.domain.copy()
-            for value in tmp:
-                neighbor.value = value
-                for constraint in constraints:
-                    if neighbor in constraint.variables:
-                        if not constraint.is_satisfied():
-                            tmp.remove(value)
-                            break                
-            neighbor.value = None
-            if len(tmp) == 0:
-                return False
-            else:
-                neighbor.domain=tmp              
-        return True    
-
-    def is_consistent(self, var: Variable) -> bool:
-        """
-        Determines ifthe given variable is consistent with all constraints.
-
-        Args:
-            var (Variable): The variable to be checked for consistency.
-
-        Returns:
-            bool: True if the variable is consistent with all constraints, False otherwise.
-        """
-        return all(constraint.is_satisfied() for constraint in self.problem.constraints if var in constraint.variables)
-    
-    def save_domain(self, vars: list[Variable]):
-        self.back_up.append([var.domain.copy() for var in vars])
-    
-    def load_domain(self, problem: Problem):
-        domains = self.back_up.pop()
-        for i in range(len(problem.variables)):
-            problem.variables[i].domain = domains[i]
-
-
-class FastNonogramSolver:
-    """
-    fast Nonogram solver using line-solving techniques.
-    This uses constraint propagation without backtracking when possible.
-    Optimized specifically for Nonogram puzzles.
-    """
-    
-    def __init__(self, problem):
-        self.problem = problem
-        self.rows = problem.rows if hasattr(problem, 'rows') else problem.size
-        self.cols = problem.cols if hasattr(problem, 'cols') else problem.size
-        self.grid = problem.grid
-        self.constraints = problem.constraints
-        self.iterations = 0
-        
-    def solve(self):
-        """
-        Solve the nonogram using iterative constraint propagation.
-        """
-        start = time.time()
-        
-        print(f"Starting to solve {self.rows}x{self.cols} nonogram...")
-        
-        # Iterative constraint propagation
-        changed = True
-        self.iterations = 0
-        
-        while changed:
-            changed = False
-            self.iterations += 1
-            
-            # Process each constraint (row and column)
-            for constraint in self.constraints:
-                if self._solve_line(constraint):
-                    changed = True
-            
-            # Print progress
-            filled = sum(1 for v in self.problem.variables if v.has_value)
-            total = len(self.problem.variables)
-            print(f"Iteration {self.iterations}: {filled}/{total} cells assigned ({100*filled//total}%)")
-            
-            if filled == total:
-                break
-                
-            # Prevent infinite loops
-            if self.iterations > 100:
-                print("Max iterations reached, may need backtracking")
-                break
-        
-        end = time.time()
-        time_elapsed = (end - start) * 1000
-        
-        # Check if solved
-        filled = sum(1 for v in self.problem.variables if v.has_value)
-        total = len(self.problem.variables)
-        
-        # Check all constraints
-        satisfied = []
-        unsatisfied = []
-        for i, c in enumerate(self.constraints):
-            if c.is_satisfied():
-                satisfied.append(i)
-            else:
-                unsatisfied.append(i)
-        
-        if filled == total and len(unsatisfied) == 0:
-            print(f'✓ Solved after {time_elapsed:.2f} ms ({self.iterations} iterations)')
-            return True
-        else:
-            if filled == total:
-                print(f'✗ All cells assigned but {len(unsatisfied)} constraints unsatisfied after {time_elapsed:.2f} ms')
-                print(f'  Unsatisfied constraints: {unsatisfied[:10]}...' if len(unsatisfied) > 10 else f'  Unsatisfied constraints: {unsatisfied}')
-            else:
-                print(f'✗ Partial solution after {time_elapsed:.2f} ms - {filled}/{total} cells ({100*filled//total}%)')
-            
-            print(f'  Trying backtracking for remaining cells...')
-            
-            # Use backtracking for remaining cells
-            result = self._backtrack()
-            end2 = time.time()
-            total_time = (end2 - start) * 1000
-            
-            if result:
-                print(f'✓ Fully solved after {total_time:.2f} ms total')
-                return True
-            else:
-                print(f'✗ Could not complete solution')
-                return False
-
-    def _solve_line(self, constraint) -> bool:
-        """
-        Solve a single line using fast line-solving algorithm.
-        Returns True if any cells were assigned.
-        """
-        # Import here to avoid circular dependency
-        from Nonogram.NonogramConstraint import NonogramConstraint
-
-        if not isinstance(constraint, NonogramConstraint):
-            return False
-
-        variables = constraint.variables
-        clue = constraint.clue
-        n = len(variables)
-
-        # Get current state
-        current = [v.value for v in variables]
-
-        # If fully assigned, nothing to do
-        if None not in current:
-            return False
-
-        # Generate all valid completions efficiently
-        definite_filled, definite_empty = self._find_definite_cells(current, clue, n)  # TODO: Implemented!
-
-        changed = False
-
-        # Assign definite cells
-        for idx in definite_filled:
-            var = variables[idx]
-            if var.value is None:
-                var.value = 1
-                changed = True
-
-        for idx in definite_empty:
-            var = variables[idx]
-            if var.value is None:
-                var.value = 0
-                changed = True
-
-        return changed
-
-    def _find_definite_cells(self, current: List[int], clue: List[int], n: int) -> Tuple[Set[int], Set[int]]:
-        """
-        Fast algorithm to find cells that must be filled or empty.
-        Uses generating all valid solutions and finding common cells.
-        """
-        if not clue:
-            # No filled cells - all must be empty
-            empty = set(i for i in range(n) if current[i] is None)
-            return set(), empty
-
-        # Generate all valid lines that match current state
-        valid_lines = self._generate_all_valid_lines(current, clue, n)
-
-        if not valid_lines:
-            # No valid solution - contradiction
-            return set(), set()
-
-        definite_filled = set()
-        definite_empty = set()
-
-        # Find cells that are the same in ALL valid lines
-        for i in range(n):
-            # فقط خانه‌هایی که هنوز آزاد (None) هستند را بررسی می‌کنیم
-            if current[i] is not None:
-                continue
-
-            vals = {line[i] for line in valid_lines}
-            # اگر همیشه ۱ باشد
-            if vals == {1}:
+            # for each index i ,look at that position in all valid lines
+            column_values = [line[i] for line in valid_lines]
+
+            # If every valid line has a 1 in position i then must be filled
+            if all(v == 1 for v in column_values):
                 definite_filled.add(i)
-            # اگر همیشه ۰ باشد
-            elif vals == {0}:
+            # If every valid line has a 0 in position i then must be empty
+            elif all(v == 0 for v in column_values):
                 definite_empty.add(i)
+            # it will be undecided otherwise
 
         return definite_filled, definite_empty
 
@@ -698,7 +293,7 @@ class FastNonogramSolver:
         valid_lines = []
 
         def is_compatible(line: List[int]) -> bool:
-            # line و current باید با هم سازگار باشند
+            # line and current should be compatible
             for i in range(n):
                 if current[i] is not None and line[i] != current[i]:
                     return False
@@ -706,61 +301,61 @@ class FastNonogramSolver:
 
         def place_blocks(pos, clue_idx, line):
             """Recursively place blocks"""
-            nonlocal valid_lines
             if len(valid_lines) >= max_solutions:
                 return
 
             if clue_idx == len(clue):
-                # بعد از آخرین بلوک، بقیه را ۰ می‌کنیم
+                # everything after last block become 0
                 for i in range(pos, n):
                     line[i] = 0
-                # اگر با current سازگار است، ذخیره
+                # if it compatible we save it
                 if is_compatible(line):
                     valid_lines.append(line.copy())
                 return
 
             block_len = clue[clue_idx]
 
-            # حداقل فضایی که بعد از این بلوک‌ها نیاز است
+            # minimum space that is needed after the blocks
             remaining_blocks = clue[clue_idx + 1:]
             if remaining_blocks:
                 min_tail = sum(remaining_blocks) + len(remaining_blocks)  # فاصله‌های ۱تایی
             else:
                 min_tail = 0
 
-            # حداکثر شروع ممکن این بلوک
+            # maximum start (so that after make the block it won't exit the length)
             max_start = n - (block_len + min_tail)
 
-            # از pos تا max_start امتحان می‌کنیم
+            # try from pos to max_start
             for start in range(pos, max_start + 1):
-                # اول تا start را ۰ می‌کنیم
+                # beginning till the start become 0
                 for i in range(pos, start):
                     line[i] = 0
 
-                # این بلوک را ۱ می‌کنیم
+                # make the blocks
                 ok = True
                 for i in range(start, start + block_len):
-                    if current[i] == 0:  # نمی‌توان اینجا ۱ گذاشت
+                    # if the current is 0 in this position we are not allowed to make it 1
+                    if current[i] == 0:
                         ok = False
                         break
                     line[i] = 1
                 if not ok:
                     continue
 
-                # اگر بعد از بلوک، هنوز بلوک دیگری هست، یک ۰ فاصله می‌گذاریم
+                # if there are more blocks after we set gap
                 next_pos = start + block_len
                 if clue_idx < len(clue) - 1:
                     if next_pos < n:
                         if current[next_pos] == 1:
-                            # باید ۰ باشد ولی current گفته ۱ → ناسازگار
+                            # if should be 0 (gap) but the current is 1 -> it is not compatible
                             continue
                         line[next_pos] = 0
                         next_pos += 1
                     else:
-                        # جا نداریم
+                        # no more space
                         continue
 
-                # ادامه بلوک بعدی
+                # continue next block
                 place_blocks(next_pos, clue_idx + 1, line)
 
         place_blocks(0, 0, [None] * n)
@@ -775,7 +370,7 @@ class FastNonogramSolver:
             unassigned: List of unassigned variables
 
         Returns:
-            Variable with smallest domain
+            Variable with the smallest domain
         """
         if not unassigned:
             return None
@@ -783,23 +378,24 @@ class FastNonogramSolver:
         # For nonogram, domain is [0, 1], so we need a different metric
         # We'll count how many constraints affect each variable
         # and prefer variables that appear in more unsatisfied constraints
-        def constraint_score(var: Variable):
+        def constraint_score(var):
             """Calculate constraint score - higher means more constrained"""
-            score = 0
+            mrv_score =0
             for c in self.constraints:
                 if var in c.variables:
-                    # اگر constraint هنوز کاملاً ارضا نشده، این متغیر در محدودیت فعال مشارکت دارد
+                    # If the constraint is not yet fully satisfied, this variable participates in the active constraint
                     if not c.is_satisfied():
-                        score += 1
-            # نمره بالاتر → متغیر محدودتر
-            return score
+                        mrv_score += 1
+            # higher mrv_score mans more constraints
+            return mrv_score
+            pass
 
         # Sort by most constrained (highest score)
         return max(unassigned, key=constraint_score)
 
     def _lcv_order(self, var: Variable) -> List[int]:
         """
-        Implements Least Constraining Value heuristic for FastNonogramSolver.
+        Implements the Least Constraining Value heuristic for FastNonogramSolver.
         Orders domain values [0, 1] by how many conflicts they cause.
 
         Args:
@@ -808,95 +404,88 @@ class FastNonogramSolver:
         Returns:
             List of values ordered by least constraining first
         """
-        # اگر دامنه خاصی تعریف نشده، فرض می‌کنیم [0,1]
-        domain_values = [0, 1]
+        values = [0, 1]
+        scores = {}
 
-        conflict_counts = {}
+        # row and columns extraction
+        row_constraint = self.problem.row_constraints[var.row]
+        col_constraint = self.problem.col_constraints[var.col]
 
-        for value in domain_values:
-            var.value = value
-            conflicts = 0
+        row_current = [v.value for v in row_constraint.variables]
+        col_current = [v.value for v in col_constraint.variables]
 
-            # محدودیت‌هایی که شامل این متغیر هستند
-            related_constraints = [c for c in self.constraints if var in c.variables]
+        for val in values:
+            # Temporary initialization
+            var.value = val
 
-            for c in related_constraints:
-                # اگر با این مقدار، constraint دیگر نمی‌تواند برآورده شود (حتی به صورت جزئی)
-                if not c.is_satisfied():
-                    conflicts += 1
+            row_temp = row_current[:]
+            row_temp[var.col] = val
+            row_valid = self._generate_all_valid_lines(
+                row_temp, row_constraint.clue, len(row_temp)
+            )
 
-            conflict_counts[value] = conflicts
+            col_temp = col_current[:]
+            col_temp[var.row] = val
+            col_valid = self._generate_all_valid_lines(
+                col_temp, col_constraint.clue, len(col_temp)
+            )
+
+            # LCV score: number of remaining states
+            scores[val] = len(row_valid) + len(col_valid)
+
+            # erasing temporary value
             var.value = None
 
-        # sort by conflict ascending → کم‌ترین تضاد در ابتدا
-        ordered = sorted(domain_values, key=lambda v: conflict_counts[v])
+        # values with the least restrictions have the highest score
+        ordered = sorted(values, key=lambda v: scores[v], reverse=True)
         return ordered
-    
+
     def _forward_check(self, var: Variable) -> bool:
         """
         Implements Forward Checking for FastNonogramSolver.
         After assigning a value to var, checks if any constraint involving var
         would eliminate all possible values for unassigned variables.
-        
+
         Args:
             var: The variable that was just assigned
-            
+
         Returns:
             bool: True if forward checking passes (no domain wipeout), False otherwise
         """
         # Get constraints that involve the assigned variable
         related_constraints = [c for c in self.constraints if var in c.variables]
-        
+
         # For each constraint, check if unassigned variables in it still have valid values
         for constraint in related_constraints:
             unassigned_in_constraint = [v for v in constraint.variables if not v.has_value]
-            
+
             for unassigned_var in unassigned_in_constraint:
                 # Check if this unassigned variable has any valid value
                 has_valid_value = False
-                
+
                 for test_value in [0, 1]:
                     unassigned_var.value = test_value
-                    
+
                     # Check if constraint can still be satisfied
                     if constraint.is_satisfied():
                         has_valid_value = True
                         unassigned_var.value = None
                         break
-                    
+
                     unassigned_var.value = None
-                
+
                 # If no valid value exists for this variable, forward check fails
                 if not has_valid_value:
                     return False
-        
+
         return True
-    
-    def _backtrack(self) -> bool:
-        """
-        Backtracking with MRV and LCV heuristics for remaining unassigned cells.
-        Uses Minimum Remaining Values to select variables and Least Constraining Value to order domain values.
-        """
-        #TODO: use your mrv and lcv here!
-        
-        # Find unassigned variables
-        unassigned = [v for v in self.problem.variables if not v.has_value]
-        
-        # If all assigned, check if satisfied
-        if not unassigned:
-            return all(c.is_satisfied() for c in self.constraints)
-        
-        # Select the first unassigned variable
-        var = unassigned[0]
-        
-        # Default order
-        ordered_values = [0, 1]
 
     def _backtrack(self) -> bool:
         """
         Backtracking with MRV and LCV heuristics for remaining unassigned cells.
         Uses Minimum Remaining Values to select variables and Least Constraining Value to order domain values.
         """
+
         # Find unassigned variables
         unassigned = [v for v in self.problem.variables if not v.has_value]
 
@@ -904,10 +493,10 @@ class FastNonogramSolver:
         if not unassigned:
             return all(c.is_satisfied() for c in self.constraints)
 
-        # انتخاب متغیر بعدی با MRV (اینجا نسخه اختصاصی خودمان)
+        # Select the next variable using mrv
         var = self._mrv_select(unassigned)
 
-        # مرتب‌سازی مقادیر دامنه با LCV
+        # order base on LCV domain
         ordered_values = self._lcv_order(var)
 
         # Try values in order
